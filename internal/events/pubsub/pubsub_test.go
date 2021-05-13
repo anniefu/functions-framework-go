@@ -185,7 +185,6 @@ func TestConvertLegacyEventToBackgroundEvent(t *testing.T) {
 				Data: map[string]interface{}{
 					"@type":      "type.googleapis.com/google.pubusb.v1.PubsubMessage",
 					"data":       []byte(`{"foo":"bar"}`),
-					"attributes": map[string]string(nil),
 				},
 			},
 		}, {
@@ -211,7 +210,6 @@ func TestConvertLegacyEventToBackgroundEvent(t *testing.T) {
 				Data: map[string]interface{}{
 					"@type":      "type.googleapis.com/google.pubusb.v1.PubsubMessage",
 					"data":       []byte(`{"foo":"bar"}`),
-					"attributes": map[string]string(nil),
 				},
 			},
 		},

@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"testing"
 	"time"
@@ -276,41 +277,6 @@ func TestGetBackgroundEvent(t *testing.T) {
 }
 
 func TestCreateCloudEvent(t *testing.T) {
-
-	bgWithoutCtxBody := bytes.NewBuffer([]byte(`{
-  "eventId": "1215011316659232",
-  "timestamp": "2020-05-18T12:13:19.209Z",
-  "eventType": "providers/cloud.pubsub/eventTypes/topic.publish",
-  "resource": "projects/sample-project/topics/gcf-test",
-  "data": {
-    "data": "10"
-  }
-}`))
-	bgWithoutCtxReq, err := http.NewRequest(http.MethodPost, "example.com", bgWithoutCtxBody)
-	if err != nil {
-		t.Fatalf("unable to create test request data: %v", err)
-	}
-
-	bgWithCtxBody := bytes.NewBuffer([]byte(`{
-	"context": {
-  	"eventId": "1215011316659232",
-  	"timestamp": "2020-05-18T12:13:19.209Z",
-		"eventType":"google.pubsub.topic.publish",
-		"resource":{
-			"service":"pubsub.googleapis.com",
-			"name":"projects/sample-project/topics/gcf-test",
-			"type":"type.googleapis.com/google.pubsub.v1.PubsubMessage"
-		}
-	},
-  "data": {
-    "data": "10"
-  }
-}`))
-	bgWithCtxReq, err := http.NewRequest(http.MethodPost, "example.com", bgWithCtxBody)
-	if err != nil {
-		t.Fatalf("unable to create test request data: %v", err)
-	}
-
 	ce := map[string]interface{}{
 		"specversion":     "1.0",
 		"id":              "1215011316659232",
@@ -320,7 +286,7 @@ func TestCreateCloudEvent(t *testing.T) {
 		"datacontenttype": "application/json",
 		"data": map[string]interface{}{
 			"message": map[string]interface{}{
-				"data": "10",
+				"data": "aGVsbG8=",
 			},
 		},
 	}
@@ -329,28 +295,74 @@ func TestCreateCloudEvent(t *testing.T) {
 		name         string
 		responseCode int
 		hasErr       bool
-		req          *http.Request
-		output       map[string]interface{}
+		body         string
+		reqPath string
+		want         map[string]interface{}
 	}{
 		{
 			name:         "background event without context attribute",
 			responseCode: http.StatusOK,
 			hasErr:       false,
-			req:          bgWithoutCtxReq,
-			output:       ce,
+			body: `{
+				"eventId": "1215011316659232",
+				"timestamp": "2020-05-18T12:13:19.209Z",
+				"eventType": "providers/cloud.pubsub/eventTypes/topic.publish",
+				"resource": "projects/sample-project/topics/gcf-test",
+				"data": {
+				  "data": "aGVsbG8="
+				}
+			}`,
+			reqPath: "example.com",
+			want: ce,
 		},
 		{
 			name:         "background event with context attribute",
 			responseCode: http.StatusOK,
 			hasErr:       false,
-			req:          bgWithCtxReq,
-			output:       ce,
+			body: `{
+				"context": {
+				"eventId": "1215011316659232",
+				"timestamp": "2020-05-18T12:13:19.209Z",
+					"eventType":"google.pubsub.topic.publish",
+					"resource":{
+						"service":"pubsub.googleapis.com",
+						"name":"projects/sample-project/topics/gcf-test",
+						"type":"type.googleapis.com/google.pubsub.v1.PubsubMessage"
+					}
+				},
+				"data": {
+					"data": "aGVsbG8="
+				}
+			}`,
+			want: ce,
+		},
+		{
+			name:         "legacy Pub/Sub event",
+			responseCode: http.StatusOK,
+			hasErr:       false,
+			body: `{
+				"subscription": "projects/FOO/subscriptions/BAR_SUB",
+				"message": {
+					"data": "aGVsbG8=",
+					"messageId": "1215011316659232",
+					"publishTime": "2020-05-18T12:13:19.209Z"
+				}
+			}`,
+			reqPath: "projects/sample-project/topics/gcf-test",
+			want: ce,
 		},
 	}
 
 	for _, tc := range tcs {
 		t.Run(tc.name, func(t *testing.T) {
-			rc, err := createCloudEventRequest(tc.req)
+			req, err := http.NewRequest(http.MethodPost, tc.reqPath, bytes.NewBuffer([]byte(tc.body)))
+			if err != nil {
+				t.Fatalf("unable to create test request data: %v", err)
+			}
+
+			log.Printf("ANNIE %s", req.URL.Path)
+
+			rc, err := createCloudEventRequest(req)
 			if tc.hasErr && err == nil {
 				t.Errorf("expected error but got nil")
 			}
@@ -362,7 +374,7 @@ func TestCreateCloudEvent(t *testing.T) {
 				t.Errorf("incorrect response code, got %d, want %d", rc, tc.responseCode)
 			}
 
-			gotBody, err := ioutil.ReadAll(tc.req.Body)
+			gotBody, err := ioutil.ReadAll(req.Body)
 			if err != nil {
 				t.Fatalf("unable to read got request body: %v", err)
 			}
@@ -372,15 +384,15 @@ func TestCreateCloudEvent(t *testing.T) {
 				t.Fatalf("unable to unmarshal got request body: %v", err)
 			}
 
-			if !cmp.Equal(got, tc.output) {
-				t.Errorf("incorrect request output, got %v, want %v", got, tc.output)
+			if diff := cmp.Diff(tc.want, got); diff != "" {
+				t.Errorf("createCloudEventRequest() mismatch (-want +got):\n%s", diff)
 			}
 
-			if got := tc.req.Header.Get(contentTypeHeader); got != jsonContentType {
+			if got := req.Header.Get(contentTypeHeader); got != jsonContentType {
 				t.Errorf("incorrect request content type header, got %s, want %s", got, jsonContentType)
 			}
 
-			if got := tc.req.Header.Get(contentLengthHeader); got != fmt.Sprint(len(gotBody)) {
+			if got := req.Header.Get(contentLengthHeader); got != fmt.Sprint(len(gotBody)) {
 				t.Errorf("incorrect request content length header, got %s, want %s", got, fmt.Sprint(len(gotBody)))
 			}
 		})

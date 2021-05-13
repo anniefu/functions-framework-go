@@ -57,6 +57,14 @@ func (e *LegacyPushSubscriptionEvent) ToBackgroundEvent(topic string) *fftypes.B
 	if timestamp.IsZero() {
 		timestamp = time.Now()
 	}
+	
+	data := map[string]interface{} {
+		"@type":      pubsubMessageType,
+		"data":       e.Message.Data,
+	}
+	if e.Message.Attributes != nil {
+		data["attributes"] = e.Message.Attributes
+	}
 	return &fftypes.BackgroundEvent{
 		Metadata: &metadata.Metadata{
 			EventID:   e.IdFromJSON,
@@ -68,10 +76,6 @@ func (e *LegacyPushSubscriptionEvent) ToBackgroundEvent(topic string) *fftypes.B
 				Service: pubsubService,
 			},
 		},
-		Data: map[string]interface{}{
-			"@type":      pubsubMessageType,
-			"data":       e.Message.Data,
-			"attributes": e.Message.Attributes,
-		},
+		Data: data,
 	}
 }

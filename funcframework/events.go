@@ -343,7 +343,7 @@ func createCloudEventRequest(r *http.Request) (int, error) {
 
 	encoded, err := json.Marshal(ce)
 	if err != nil {
-		return http.StatusBadRequest, fmt.Errorf("Unable to marshal CloudEvent %v: %v", ce, err)
+		return http.StatusBadRequest, fmt.Errorf("unable to marshal CloudEvent %v: %v", ce, err)
 	}
 
 	r.Body = ioutil.NopCloser(bytes.NewReader(encoded))
