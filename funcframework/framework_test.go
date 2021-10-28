@@ -231,12 +231,12 @@ func TestEventFunction(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		h := http.NewServeMux()
-		if err := registerEventFunction("/", tc.fn, h); err != nil {
+		handler = http.NewServeMux()
+		if err := RegisterEventFunctionContext(context.Background(), "/", tc.fn); err != nil {
 			t.Fatalf("registerEventFunction(): %v", err)
 		}
 
-		srv := httptest.NewServer(h)
+		srv := httptest.NewServer(handler)
 		defer srv.Close()
 
 		req, err := http.NewRequest("POST", srv.URL, bytes.NewBuffer(tc.body))
