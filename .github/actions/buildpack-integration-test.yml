@@ -1,0 +1,23 @@
+name: 'Buildpack Integration Test'
+description: 'Tests a Functions Framework build with the corresponding GCF builder'
+inputs:
+  builder-source:
+    required: true
+    description: relative of the function source code from the repo root
+  builder-target:
+    required: true
+    description: the function target
+  builder-runtime:
+    required: true
+    description: the runtime version (e.g. "go116", "node16") to use
+  builder-tag:
+    required: true
+    description: the image tag of the builder to use (e.g. "go116_20210714_1_16_6_RC00")
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
+  args:
+    - '-builder-source ${{ inputs.builder-source }}'
+    - '-builder-target ${{ inputs.builder-target }}'
+    - '-builder-runtime ${{ inputs.builder-runtime }}'
+    - '-builder-tag ${{ inputs.builder-tag }}''

@@ -20,8 +20,8 @@ import (
 	"log"
 	"os"
 
+	"example.com/conformance/function"
 	"github.com/GoogleCloudPlatform/functions-framework-go/funcframework"
-	"github.com/GoogleCloudPlatform/functions-framework-go/testdata/conformance/function"
 )
 
 func main() {
