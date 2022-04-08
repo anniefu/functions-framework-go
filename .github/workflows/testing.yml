@@ -11,5 +11,5 @@ jobs:
   download-conformance-client:
     runs-on: ubuntu-latest 
     steps:
-      - if: ${{ github.event.review.state == 'approved' }}
-        run: echo ${{ github.event }}
+      - if: ${{ github.event.review.state == 'approved' && github.event.pull_request.user.login == 'github-actions[bot]' }}
+        run: echo ${{ github.event.pull_request.user.login }}
