@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
 jobs:
   go113-buildpack-test:
-    uses: GoogleCloudPlatform/functions-framework-conformance/.github/workflows/buildpack-integration-test.yml@v1.4.0
+    uses: anniefu/functions-framework-conformance/.github/workflows/buildpack-integration-test.yml@v49f0cc4222753ca3601cd52f8fc4bde75f03cf52
     with:
       http-builder-source: 'testdata/conformance/function'
       http-builder-target: 'declarativeHTTP'
@@ -19,7 +19,7 @@ jobs:
       builder-runtime: 'go113'
       builder-tag: 'go113_20220320_1_13_15_RC00'
   go116-buildpack-test:
-    uses: GoogleCloudPlatform/functions-framework-conformance/.github/workflows/buildpack-integration-test.yml@v1.4.0
+    uses: anniefu/functions-framework-conformance/.github/workflows/buildpack-integration-test.yml@v49f0cc4222753ca3601cd52f8fc4bde75f03cf52
     with:
       http-builder-source: 'testdata/conformance/function'
       http-builder-target: 'declarativeHTTP'
